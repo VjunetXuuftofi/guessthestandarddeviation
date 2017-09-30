@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Guess the Standard Deviation</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.7/css/bootstrap.min.css"
+          integrity="sha256-916EbMg70RQy9LHiGkXzG8hSg9EdNy97GazNG/aiY1w=" crossorigin="anonymous" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="container-fluid">
+    <div id="intro">
+        <div class="row text-center">
+            <h1>
+                Guess the Standard Deviation
+            </h1>
+            <h2>
+                The most stupid game you'll ever play.™
+            </h2>
+        </div>
+        <div class="row">
+            <div class="col-md-offset-2 col-md-8">
+                <h3 class="text-center">
+                    Instructions
+                </h3>
+                <p>
+                    You will be presented with a histogram representing a distribution. You will have 5 seconds to guess the standard
+                    deviation of the distribution and enter it. You do not have to submit your guess; it will automatically be submitted
+                    after 5 seconds.
+                    You will get a score corresponding
+                    to the percent error of your guess; for instance, if you guess 1 but the standard deviation is 2, your error
+                    will be 50%. At the end of ten rounds, your mean error will be logged to the leaderboard. Lower scores are better.
+                    If you guess zero every time, you will get a mean score of 100%. It is possible to get over 100% if you guess
+                    more than twice the actual standard deviation.
+                    <br>
+                    Sometimes it takes a ridiculously long time to load the first image (like 20 seconds). But if you
+                    think I would spend any time trying to fix that, you'd be wrong.
+                    <br>
+                    No, you do not get to choose the binwidth. There are 100 bins, and there will always be 100 bins.
+                    Deal with it.
+                    <br>
+                    If you would like to see the <i>stupendous</i> code I used to create this, ask me and I'll show it to you
+                    (unless your name is Will Buxton).
+                </p>
+                Enter your display name: <input title="name" id="username">
+                <br>
+                <button id="start" class="btn">Begin!</button>
+            </div>
+        </div>
+    </div>
+    <div id="game">
+        <div class="row">
+            <div class="col-md-offset-2 col-md-8">
+                <div style="width: 640px; height: 480px;" id="image-container">
+                </div>
+                Your guess: <input title="guess" id="submission">
+                <p id="countdown"></p>
+                <div id="results">
+                    Your guess: <span id="guess"></span>
+                    <br>
+                    Correct answer: <span id="answer"></span>
+                    <br>
+                    Error: <span id="error"></span>
+                    <br>
+                    Mean error (so far): <span id="mean-error"></span>
+                    <br>
+                    <button id="next" class="btn">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="game-over">
+        <div class="row">
+            <div class="col-md-offset-2 col-md-8">
+                <h2 class="text-center">Game over</h2>
+                Your mean error: <b id="final-mean-error"></b>
+                <br>
+                <h3 class="text-center">Leaderboard</h3>
+                <div>
+                    <table class="table">
+                        <thead>
+                        <tr>
+                            <td>Rank</td><td>Username</td><td>Mean error</td>
+                        </tr>
+                        </thead>
+                        <tbody id="leaderboard">
+
+                        </tbody>
+                    </table>
+                </div>
+                <button id="new-game" class="btn">New game</button>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    var game = $("#game");
+    var results = $("#results");
+    var start = $("#start");
+    var username_input = $("#username");
+    var intro = $("#intro");
+    var image_container = $("#image-container");
+    var submission = $("#submission");
+    var countdown_container = $("#countdown");
+    var guess = $("#guess");
+    var answer = $("#answer");
+    var error = $("#error");
+    var mean_error = $("#mean-error");
+    var next = $("#next");
+    var game_over = $("#game-over");
+    var final_mean_error = $("#final-mean-error");
+    var leaderboard_container = $("#leaderboard");
+    var actual_sd;
+    var finished = false;
+    var username;
+    var leaderboard;
+
+    game.hide();
+    results.hide();
+    game_over.hide();
+
+    start.click(function() {
+        username = username_input.val();
+        intro.hide();
+        game.show();
+        loadImage();
+    });
+
+    function loadImage() {
+        $.get({
+            url: "http://127.0.0.1:5000/distribution",
+            success: function(data) {
+                console.log("test");
+                image_container.empty();
+                image_container.append("<img src='data:image/png;base64," + data["image"] + "'>");
+                submission.val("");
+                actual_sd = data["actual_sd"];
+                results.hide();
+                $("#submission").focus();
+                countdown();
+            }
+        })
+    }
+
+    function countdown() {
+        var deadline = new Date().getTime() + 5000;
+        countdown_container.text(5 + " seconds until answer submission");
+        var interval = setInterval(function() {
+            var left = (deadline - new Date().getTime())/1000;
+            if (left <= 0) {
+                clearInterval(interval);
+                submit();
+            }
+            countdown_container.text(left + " seconds until answer submission");
+        }, 100);
+    }
+
+    function submit() {
+        $.post({
+            url: "http://127.0.0.1:5000/guess",
+            data: {
+                "actual_sd": actual_sd,
+                "sd_guess": submission.val(),
+                "user": username
+            },
+            success: function(data) {
+                guess.text(data["your_sd"]);
+                answer.text(data["actual_sd"]);
+                error.text(data["your_error"] + "%");
+                mean_error.text(data["mean_error"] + "%");
+                results.show();
+                finished = data["finished"];
+                if (finished) {
+                    leaderboard = data["leaderboard"];
+                }
+            }
+        });
+    }
+    next.click(function() {
+        if (finished) {
+            game.hide();
+            game_over.show();
+            final_mean_error.text(mean_error.text());
+            leaderboard_container.empty();
+            for (var i = 0; i < leaderboard.length; i++) {
+                var person = leaderboard[i];
+                leaderboard_container.append("<tr><td>" + (i + 1) + "</td><td>" + person[0] + "</td><td>" + person[1] +
+                    "</td></tr>");
+            }
+        } else {
+            loadImage();
+        }
+    });
+    $("#new-game").click(function() {
+        location.reload();
+    });
+
+</script>
+</html>
