@@ -17,7 +17,7 @@
                 Guess the Standard Deviation
             </h1>
             <h2>
-                The most stupid game you'll ever play.™
+                The most stupidest game you'll ever play.™
             </h2>
         </div>
         <div class="row">
@@ -131,7 +131,7 @@
 
     function loadImage() {
         $.get({
-            url: "http://127.0.0.1:5000/distribution",
+            url: "https://guessthestandarddeviation.herokuapp.com/distribution",
             success: function(data) {
                 console.log("test");
                 image_container.empty();
@@ -160,7 +160,7 @@
 
     function submit() {
         $.post({
-            url: "http://127.0.0.1:5000/guess",
+            url: "https://guessthestandarddeviation.herokuapp.com/guess",
             data: {
                 "actual_sd": actual_sd,
                 "sd_guess": submission.val(),
