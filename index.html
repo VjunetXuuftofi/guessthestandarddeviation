@@ -187,8 +187,8 @@
             leaderboard_container.empty();
             for (var i = 0; i < leaderboard.length; i++) {
                 var person = leaderboard[i];
-                leaderboard_container.append("<tr><td>" + (i + 1) + "</td><td>" + person[0] + "</td><td>" + person[1] +
-                    "</td></tr>");
+                leaderboard_container.append("<tr><td>" + (i + 1) + "</td><td>" +
+                    person[0].replace(/</g, "&lt;").replace(/>/g, "&gt;") + "</td><td>" + person[1] + "</td></tr>");
             }
         } else {
             loadImage();
